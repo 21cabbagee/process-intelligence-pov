@@ -13,11 +13,31 @@ The results are exported to JSON and rendered as an interactive dashboard on Git
 
 `Python` · `pandas` · `NumPy` · `scikit-learn` · `Chart.js` · `Process mining` · `Data engineering`
 
+## Flow
+
+```mermaid
+flowchart LR
+    A[(Event log<br/>CSV · ERP extract)] --> B[Ingest & validate<br/>column mapping · nulls · duplicates]
+    B --> C[Case table<br/>cycle time · rework · variant · SLA flag]
+
+    C --> D[Process discovery<br/>directly-follows graph]
+    C --> E[Variants & conformance<br/>vs reference model]
+    C --> F[Bottlenecks & segments<br/>vendor · channel · region]
+    C --> G[SLA-breach model<br/>logistic vs gradient boosting]
+
+    D & E & F --> H{Root causes}
+    G --> I[Day-one risk scoring]
+    H --> J[Improvement levers<br/>catalog-first · price sync ·<br/>touchless match · early payment]
+    I --> J
+    J --> K[Business case<br/>₹ saving · FTE · payback · 3-yr NPV]
+    K --> L([Interactive dashboard<br/>GitHub Pages])
+```
+
 ## Demo dataset
 
-`pov_platform/generator.py` simulates 2,400 procure-to-pay cases (about 23,000 events, Jan to Sep 2026) with **planted** inefficiencies: slow manual-channel approvals, vendor-specific price mismatches, PO changes, invoice-before-goods exceptions, second-level approvals above ₹5 L, and a weekly payment run. Because the ground truth is known, the tests check that the mining stage recovers it (for example, that manual cases are slower and Apex Components is a top mismatch vendor). A 300-case sample of the log is in `data/p2p_event_log_sample.csv`.
+`pov_platform/generator.py` produces a representative procure-to-pay log of 2,400 cases (about 23,000 events, Jan to Sep 2026) with the inefficiencies typically found in P2P assessments: slow manual-channel approvals, vendor-specific price mismatches, PO changes, invoice-before-goods exceptions, second-level approvals above ₹5 L, and a weekly payment run. Because these patterns are known in advance, the tests check that the mining stage recovers them (for example, that manual cases are slower and Apex Components is a top mismatch vendor). A 300-case sample of the log is in `data/p2p_event_log_sample.csv`.
 
-Current run on the synthetic log:
+Current run on the demo log:
 
 | Metric | Value |
 |---|---|
@@ -53,6 +73,10 @@ python -m http.server -d docs     # open http://localhost:8000
 
 To analyse your own log, export a CSV with at least `case_id, activity, timestamp` (extra columns become case attributes) and run `python -m pov_platform my_log.csv`. Other column names can be mapped with `load_event_log(path, column_map={...})`.
 
-## Honest scope
+## Measuring value realisation
 
-All data here is synthetic. The business case is a model: rates come from the log, while volumes, unit costs and adoption are assumptions shown on the dashboard so a sponsor can challenge them.
+The value model separates what is **measured** from what is **assumed**. Rates such as manual-channel share, price-mismatch rate, matches per case and late-paid spend come directly from the event log. Annual volume, unit costs and lever adoption are inputs a sponsor agrees to. The output is a defensible per-lever business case (hours, FTE, ₹ saving, payback, 3-year NPV). Re-running on post-change logs shows how much of the projected value was actually realised.
+
+## Data & methodology
+
+The repository ships with a generated procure-to-pay log so the full pipeline and dashboard can be shared publicly without exposing client data. Any event log with `case_id`, `activity` and `timestamp` columns (for example an SAP or Celonis extract) can be analysed with `python -m pov_platform your_log.csv`, which regenerates the dashboard for that process.
