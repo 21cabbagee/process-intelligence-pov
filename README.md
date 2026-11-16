@@ -16,7 +16,7 @@ The results are exported to JSON and rendered as an interactive dashboard on Git
 ## Flow
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[(Event log<br/>CSV · ERP extract)] --> B[Ingest & validate<br/>column mapping · nulls · duplicates]
     B --> C[Case table<br/>cycle time · rework · variant · SLA flag]
 
