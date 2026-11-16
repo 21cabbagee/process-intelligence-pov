@@ -1,8 +1,10 @@
 (() => {
   const $ = (id) => document.getElementById(id);
-  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const css = (v) => getComputedStyle(document.body).getPropertyValue(v).trim();
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const pct = (x, d = 0) => (x * 100).toFixed(d) + "%";
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
   const inr = (v) => {
     const a = Math.abs(v), s = v < 0 ? "−" : "";
     if (a >= 1e7) return `${s}₹${(a / 1e7).toFixed(2)} Cr`;
@@ -16,13 +18,68 @@
     "Resolve Price Mismatch": "Mismatch", "Approve Payment": "Approve pay", "Pay Invoice": "Pay",
   };
   const REWORK = new Set(["Change Purchase Order", "Resolve Price Mismatch", "Second-Level Approval"]);
+  const heatVar = (h) => (h < 24 ? "--heat-0" : h < 72 ? "--heat-1" : "--heat-2");
+
+  const ACHIEVEMENTS = [
+    { id: "opened", icon: "📂", title: "Case opened", xp: 10, desc: "Opened the case file. The investigation begins.", hint: "Open the dashboard." },
+    { id: "gut", icon: "🎯", title: "Gut check", xp: 50, desc: "Guessed the SLA-breach rate within 5 points.", hint: "Make your guess in Clue 1." },
+    { id: "carto", icon: "🗺️", title: "Cartographer", xp: 30, goal: 5, desc: "Inspected five handoffs on the process map.", hint: "Hover five different edges on the process map." },
+    { id: "bottleneck", icon: "⏳", title: "Bottleneck hunter", xp: 50, desc: "Identified the handoff that wastes the most time.", hint: "Answer the challenge in Clue 3." },
+    { id: "alibi", icon: "🧾", title: "Alibi checker", xp: 40, desc: "Knew how often cases follow the textbook path.", hint: "Answer the challenge in Clue 4." },
+    { id: "thorough", icon: "🧭", title: "Thorough", xp: 30, goal: 4, desc: "Inspected all four segment views.", hint: "Open every segment tab in Clue 5." },
+    { id: "culprit", icon: "🕵️", title: "Name the culprit", xp: 50, desc: "Picked out the vendor with the slowest cycle time.", hint: "Click the right vendor bar in Clue 5." },
+    { id: "fortune", icon: "🔮", title: "Fortune teller", xp: 50, desc: "Knew which signal best predicts a late case.", hint: "Answer the challenge in Clue 6." },
+    { id: "deal", icon: "💰", title: "Deal closer", xp: 40, desc: "Pushed the gross annual saving past ₹2 Cr.", hint: "In the boss level, push gross annual saving past ₹2 Cr." },
+    { id: "lean", icon: "⚡", title: "Lean machine", xp: 60, desc: "Payback under 3 months with three or more levers live.", hint: "Get payback below 3 months with at least 3 levers switched on." },
+    { id: "master", icon: "🏅", title: "Master detective", xp: 150, master: true, desc: "Solved every clue. Case closed.", hint: "Earn every other badge." },
+  ];
+  const game = Game.create({
+    storageKey: "processdetective.v1",
+    achievements: ACHIEVEMENTS,
+    levelNames: ["Rookie", "Investigator", "Analyst", "Inspector", "Chief Inspector", "Commissioner", "Legend"],
+  });
 
   function chartDefaults() {
     Chart.defaults.color = css("--muted");
     Chart.defaults.borderColor = css("--border");
-    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+    Chart.defaults.font.family = "Inter, system-ui, sans-serif";
     Chart.defaults.maintainAspectRatio = false;
     Chart.defaults.plugins.legend.labels.boxWidth = 12;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  }
+
+  function countUp(el, to, fmt) {
+    if (reduced) { el.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = 1100;
+    (function tick(t) {
+      const p = Math.min(1, Math.max(0, (t - t0) / dur)), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(to * e);
+      if (p < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  // Generic locked-panel quiz
+  function challenge(lockId, { tag, q, options, correct, ach, explain }) {
+    const lock = $(lockId);
+    if (game.has(ach)) { lock.classList.remove("locked"); return; }
+    const box = lock.querySelector(".challenge");
+    box.innerHTML = `<div class="card"><div class="tag">${tag}</div><div class="q">${q}</div>
+      <div class="opts">${options.map((o, i) => `<button data-i="${i}">${esc(o)}</button>`).join("")}</div>
+      <button class="linkish skip">Skip and reveal (no XP)</button><div class="res"></div></div>`;
+    let done = false;
+    box.addEventListener("click", (e) => {
+      if (done) return;
+      const b = e.target.closest("button");
+      if (!b) return;
+      if (b.classList.contains("skip")) { done = true; lock.classList.remove("locked"); return; }
+      done = true;
+      const i = +b.dataset.i, ok = i === correct;
+      box.querySelectorAll(".opts button").forEach((x, j) => x.classList.add(j === correct ? "right" : j === i ? "wrong" : "x"));
+      box.querySelector(".res").innerHTML = `<div class="verdict ${ok ? "ok" : "bad"}">${ok ? "✅ Correct! " : "❌ Not quite. "}${explain}</div>`;
+      if (ok) game.unlock(ach); else Game.toast("Clue logged", "Wrong answer, but the evidence is now revealed.", "📝");
+      setTimeout(() => lock.classList.remove("locked"), 1900);
+    });
   }
 
   fetch("data/dashboard.json").then((r) => r.json()).then(render).catch((e) => {
@@ -32,13 +89,40 @@
   function render(d) {
     chartDefaults();
     const k = d.kpis, m = d.meta, c = d.conformance;
-    $("meta").textContent = `${m.process} · ${m.cases.toLocaleString("en-IN")} cases · ${m.events.toLocaleString("en-IN")} events · ${m.from} to ${m.to} · SLA ${m.sla_days} days`;
-    $("kpis").innerHTML = [
-      [k.median_cycle_days + " d", "Median cycle time", `P90 ${k.p90_cycle_days} d`],
-      [pct(k.sla_breach_rate), "Cases breaching SLA", `> ${m.sla_days} days end-to-end`],
-      [pct(c.happy_path_rate), "Follow the happy path", `${k.variants} distinct variants`],
-      [pct(k.rework_rate), "Cases with rework", `${pct(k.price_mismatch_rate)} price mismatches`],
-    ].map(([v, l, s]) => `<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div><div class="s">${s}</div></div>`).join("");
+    const counts = { cases: m.cases, events: m.events, variants: k.variants, auc: d.model.models[d.model.best].roc_auc };
+    document.querySelectorAll("[data-count]").forEach((el) => {
+      const key = el.dataset.count;
+      countUp(el, counts[key], key === "auc" ? (v) => v.toFixed(2) : (v) => Math.round(v).toLocaleString("en-IN"));
+    });
+    $("meta").textContent = `${m.process} · ${m.from} to ${m.to} · SLA ${m.sla_days} days`;
+    $("slaDays").textContent = m.sla_days;
+
+    const breach = k.sla_breach_rate;
+    const fmts = [(v) => v.toFixed(1) + " d", (v) => v.toFixed(0) + "%", (v) => v.toFixed(0) + "%", (v) => v.toFixed(0) + "%"];
+    function kpis(revealed) {
+      const cards = [
+        [k.median_cycle_days, "Median cycle time", `P90 ${k.p90_cycle_days} d`],
+        [revealed ? breach * 100 : null, "Cases breaching SLA", `> ${m.sla_days} days end-to-end`],
+        [c.happy_path_rate * 100, "Follow the happy path", `${k.variants} distinct variants`],
+        [k.rework_rate * 100, "Cases with rework", `${pct(k.price_mismatch_rate)} price mismatches`],
+      ];
+      $("kpis").innerHTML = cards.map(([v, l, s]) => `<div class="kpi hot ${v === null ? "mystery" : ""}"><div class="v">${v === null ? "?" : ""}</div><div class="l">${l}</div><div class="s">${v === null ? "locked: make your guess below" : s}</div></div>`).join("");
+      document.querySelectorAll("#kpis .v").forEach((el, i) => cards[i][0] !== null && countUp(el, cards[i][0], fmts[i]));
+    }
+    const guessDone = game.has("gut");
+    kpis(guessDone);
+    if (guessDone) $("guessPanel").classList.add("hidden");
+    $("guess").addEventListener("input", () => ($("guessV").textContent = $("guess").value + "%"));
+    $("lockGuess").addEventListener("click", () => {
+      const g = +$("guess").value, actual = Math.round(breach * 100), diff = Math.abs(g - actual);
+      $("lockGuess").disabled = true; $("guess").disabled = true;
+      let msg;
+      if (diff <= 5) { game.unlock("gut"); msg = `<div class="verdict ok">🎯 Bullseye. Actual is ${actual}%, you said ${g}%.</div>`; }
+      else if (diff <= 12) { game.addXP(15); msg = `<div class="verdict ok">Close. Actual is ${actual}%, you said ${g}% (+15 XP). Reset progress to try for the badge again.</div>`; }
+      else msg = `<div class="verdict bad">Way off. Actual is ${actual}%, you said ${g}%: almost a third of cases run late.</div>`;
+      $("guessResult").innerHTML = msg;
+      kpis(true);
+    });
 
     drawMap(d.process_map);
     drawBottlenecks(d.bottlenecks);
@@ -48,34 +132,36 @@
     drawSegments(d.segments);
     drawModel(d.model);
     drawValue(d.value);
+
+    setTimeout(() => game.unlock("opened"), 700);
+
+    const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && e.target.classList.add("in")), { threshold: 0.06 });
+    document.querySelectorAll("main section").forEach((s) => { s.classList.add("reveal"); io.observe(s); });
   }
 
   // ---------- process map ----------
   function drawMap(pm) {
     const svg = $("map");
-    const NS = "http://www.w3.org/2000/svg";
     const W = 100, H = 46, X0 = -20, DX = 126, Y0 = 50, DY = 100;
     const pos = {};
     for (const [a, [col, row]] of Object.entries(pm.layout)) {
-      const c = a.startsWith("●") ? 0.3 : a.startsWith("■") ? 9.7 : col; // pull start/end in
-      pos[a] = { x: X0 + c * DX, y: Y0 + row * DY };
+      const cc = a.startsWith("●") ? 0.3 : a.startsWith("■") ? 9.7 : col;
+      pos[a] = { x: X0 + cc * DX, y: Y0 + row * DY };
     }
     const width = X0 + 10 * DX - 20, height = Y0 + 2 * DY + 50;
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     const counts = Object.fromEntries(pm.activities.map((a) => [a.activity, a.events]));
     const edges = pm.edges.filter((e) => pos[e.source] && pos[e.target]);
     const maxC = Math.max(...edges.map((e) => e.count));
-    const heat = (h) => (h < 24 ? "--heat-0" : h < 72 ? "--heat-1" : "--heat-2");
+    const isTerm = (a) => a.startsWith("●") || a.startsWith("■");
 
     let defs = "<defs>";
-    for (const h of ["--heat-0", "--heat-1", "--heat-2", "--muted"]) {
+    for (const h of ["--heat-0", "--heat-1", "--heat-2", "--accent"]) {
       defs += `<marker id="ar${h}" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${css(h)}"/></marker>`;
     }
     defs += "</defs>";
 
-    const isTerm = (a) => a.startsWith("●") || a.startsWith("■");
     function border(p, toward, term) {
-      // point on the node border in the direction of `toward`
       const dx = toward.x - p.x, dy = toward.y - p.y;
       if (term) { const L = Math.hypot(dx, dy) || 1; return { x: p.x + (dx / L) * 9, y: p.y + (dy / L) * 9 }; }
       const sx = dx ? (W / 2) / Math.abs(dx) : Infinity, sy = dy ? (H / 2) / Math.abs(dy) : Infinity;
@@ -83,7 +169,7 @@
       return { x: p.x + dx * s, y: p.y + dy * s };
     }
 
-    let paths = "", labels = "";
+    let paths = "", labels = "", tokens = "";
     edges.sort((a, b) => a.count - b.count).forEach((e) => {
       const a = pos[e.source], b = pos[e.target];
       const span = Math.hypot(b.x - a.x, b.y - a.y);
@@ -96,15 +182,26 @@
       const cp = { x: mx + nx * bend, y: my + ny * bend };
       const p0 = border(a, bend ? cp : b, isTerm(e.source));
       const p1 = border(b, bend ? cp : a, isTerm(e.target));
-      const h = isTerm(e.source) || isTerm(e.target) ? "--muted" : heat(e.median_wait_h);
-      const w = (isTerm(e.source) || isTerm(e.target)) ? 1.5 : 1 + 6 * Math.sqrt(e.count / maxC);
+      const term = isTerm(e.source) || isTerm(e.target);
+      const h = term ? "--accent" : heatVar(e.median_wait_h);
+      const w = term ? 1.5 : 1 + 6 * Math.sqrt(e.count / maxC);
       const days = (e.median_wait_h / 24).toFixed(1);
-      paths += `<path class="e" d="M${p0.x},${p0.y} Q${cp.x},${cp.y} ${p1.x},${p1.y}" stroke="${css(h)}" stroke-width="${w.toFixed(1)}" marker-end="url(#ar${h})"><title>${esc(e.source)} → ${esc(e.target)}\n${e.count} cases · median wait ${days} d · P90 ${(e.p90_wait_h / 24).toFixed(1)} d</title></path>`;
-      if (h !== "--muted" && e.count >= maxC * 0.04) {
+      const d = `M${p0.x.toFixed(1)},${p0.y.toFixed(1)} Q${cp.x.toFixed(1)},${cp.y.toFixed(1)} ${p1.x.toFixed(1)},${p1.y.toFixed(1)}`;
+      const info = term ? "" : `${e.source} → ${e.target} · ${e.count.toLocaleString("en-IN")} cases · median wait ${days} d · P90 ${(e.p90_wait_h / 24).toFixed(1)} d`;
+      paths += `<path class="e" d="${d}" stroke="${css(h)}" stroke-width="${w.toFixed(1)}" marker-end="url(#ar${h})" data-key="${esc(e.source + ">" + e.target)}" data-info="${esc(info)}">${info ? `<title>${esc(info)}</title>` : ""}</path>`;
+      const big = !term && e.count >= maxC * 0.04;
+      if (big) {
         const lx = 0.25 * p0.x + 0.5 * cp.x + 0.25 * p1.x, ly = 0.25 * p0.y + 0.5 * cp.y + 0.25 * p1.y;
         const vertical = Math.abs(a.x - b.x) < 1;
         const ox = vertical ? (back ? 18 : -18) : 0, oy = vertical ? 3 : bend ? (bend < 0 ? -4 : 12) : -7;
-        labels += `<text class="el" x="${lx + ox}" y="${ly + oy}" text-anchor="middle">${days}d</text>`;
+        labels += `<text class="el" x="${(lx + ox).toFixed(1)}" y="${(ly + oy).toFixed(1)}" text-anchor="middle">${days}d</text>`;
+      }
+      if (big && !reduced) {
+        const n = 1 + Math.round((2 * e.count) / maxC);
+        const dur = 1.6 + Math.min(5, (e.median_wait_h / 24) * 0.9);
+        for (let i = 0; i < n; i++) {
+          tokens += `<circle class="tok" r="3.2" fill="${css(h)}"><animateMotion dur="${dur.toFixed(2)}s" begin="-${((i / n) * dur).toFixed(2)}s" repeatCount="indefinite" path="${d}"/></circle>`;
+        }
       }
     });
 
@@ -117,26 +214,36 @@
       const words = a.split(" ");
       const mid = Math.ceil(words.length / 2);
       const lines = words.length >= 2 ? [words.slice(0, mid).join(" "), words.slice(mid).join(" ")] : [a];
-      nodes += `<g class="n${REWORK.has(a) ? " rework" : ""}"><rect x="${p.x - W / 2}" y="${p.y - H / 2}" width="${W}" height="${H}" rx="7"/>` +
+      nodes += `<g class="n${REWORK.has(a) ? " rework" : ""}"><rect x="${p.x - W / 2}" y="${p.y - H / 2}" width="${W}" height="${H}" rx="9"/>` +
         lines.map((l, i) => `<text x="${p.x}" y="${p.y - (lines.length - 1) * 6 + i * 12 - 3}" text-anchor="middle">${esc(l)}</text>`).join("") +
-        `<text class="cnt" x="${p.x}" y="${p.y + (lines.length > 1 ? 16 : 13)}" text-anchor="middle">${(counts[a] || 0).toLocaleString("en-IN")}</text><title>${esc(a)}: ${counts[a]} events</title></g>`;
+        `<text class="cnt" x="${p.x}" y="${p.y + (lines.length > 1 ? 16 : 13)}" text-anchor="middle">${(counts[a] || 0).toLocaleString("en-IN")}</text></g>`;
     }
-    svg.innerHTML = defs + paths + nodes + labels;
+    svg.innerHTML = defs + paths + tokens + nodes + labels;
+    svg.querySelectorAll("path.e").forEach((p) => {
+      if (!p.dataset.info) return;
+      const show = () => { $("edgeInfo").textContent = p.dataset.info; game.progress("carto", p.dataset.key); };
+      p.addEventListener("mouseenter", show);
+      p.addEventListener("click", show);
+    });
   }
 
   // ---------- charts ----------
   function drawBottlenecks(b) {
+    const label = (e) => `${SHORT[e.source] || e.source} → ${SHORT[e.target] || e.target}`;
     new Chart($("bottlenecks"), {
       type: "bar",
-      data: {
-        labels: b.map((e) => `${SHORT[e.source] || e.source} → ${SHORT[e.target] || e.target}`),
-        datasets: [{ data: b.map((e) => Math.round(e.total_wait_days)), backgroundColor: b.map((e) => css(e.median_wait_h < 24 ? "--heat-0" : e.median_wait_h < 72 ? "--heat-1" : "--heat-2")), borderRadius: 4 }],
-      },
+      data: { labels: b.map(label), datasets: [{ data: b.map((e) => Math.round(e.total_wait_days)), backgroundColor: b.map((e) => css(heatVar(e.median_wait_h))), borderRadius: 6 }] },
       options: {
         indexAxis: "y", plugins: { legend: { display: false },
           tooltip: { callbacks: { afterLabel: (ctx) => `median wait ${(b[ctx.dataIndex].median_wait_h / 24).toFixed(1)} d × ${b[ctx.dataIndex].count} cases` } } },
         scales: { x: { title: { display: true, text: "case-days of waiting" } }, y: { grid: { display: false } } },
       },
+    });
+    const opts = shuffle(b.slice(0, 4));
+    challenge("lockBottleneck", {
+      tag: "⏳ Challenge · +50 XP", q: "Which handoff adds the most total waiting time across all cases?",
+      options: opts.map(label), correct: opts.indexOf(b[0]), ach: "bottleneck",
+      explain: `${label(b[0])} adds about ${Math.round(b[0].total_wait_days).toLocaleString("en-IN")} case-days. That's vendor lead time, so internal fixes target the next biggest waits.`,
     });
   }
 
@@ -145,7 +252,7 @@
     const labels = h.map((r) => { const [a, b] = parse(r.bin); return b > 1e6 ? `${a}+` : `${a}–${b}`; });
     new Chart($("histogram"), {
       type: "bar",
-      data: { labels, datasets: [{ data: h.map((r) => r.cases), backgroundColor: h.map((r) => (parse(r.bin)[0] >= sla ? css("--heat-2") : css("--accent"))), borderRadius: 3, categoryPercentage: 1, barPercentage: 0.92 }] },
+      data: { labels, datasets: [{ data: h.map((r) => r.cases), backgroundColor: h.map((r) => (parse(r.bin)[0] >= sla ? css("--heat-2") : css("--accent"))), borderRadius: 4, categoryPercentage: 1, barPercentage: 0.9 }] },
       options: {
         plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => `${i[0].label} days` } } },
         scales: { x: { title: { display: true, text: `cycle time (days) · red = beyond ${sla}-day SLA` }, grid: { display: false } }, y: { title: { display: true, text: "cases" } } },
@@ -155,9 +262,9 @@
 
   function drawVariants(v) {
     const max = Math.max(...v.map((r) => r.share));
-    $("variants").querySelector("tbody").innerHTML = v.slice(0, 8).map((r) => `<tr>
+    $("variants").querySelector("tbody").innerHTML = v.slice(0, 7).map((r) => `<tr>
       <td><div class="path">${r.variant.split(" → ").map((a) => `<span class="${REWORK.has(a) ? "rw" : ""}">${esc(SHORT[a] || a)}</span>`).join("")}</div></td>
-      <td><div class="share"><i style="width:${(r.share / max) * 48}px"></i>${pct(r.share, 1)}</div></td>
+      <td><div class="share"><i style="width:${(r.share / max) * 44}px"></i>${pct(r.share, 1)}</div></td>
       <td class="num">${r.median_cycle_days.toFixed(1)}</td><td class="num">${pct(r.breach_rate)}</td></tr>`).join("");
   }
 
@@ -170,20 +277,30 @@
       ["Second-level approval", c.extra_approval_rate, "requisitions above ₹5 L"],
     ];
     $("conformance").innerHTML = rows.map(([l, v, h]) => `<div class="row"><div><span>${l}</span><b>${pct(v, 1)}</b></div><div class="track"><i style="width:${v * 100}%"></i></div><div class="hint">${h}</div></div>`).join("");
+    const right = Math.round(c.happy_path_rate * 100);
+    const vals = shuffle([right, Math.max(5, right - 26), Math.min(97, right + 22), Math.max(3, right - 47)]);
+    challenge("lockConf", {
+      tag: "🧾 Challenge · +40 XP", q: "What share of purchase cases follow the exact textbook (happy) path?",
+      options: vals.map((x) => x + "%"), correct: vals.indexOf(right), ach: "alibi",
+      explain: `Only ${right}% do. The rest loop through PO changes, price-mismatch fixes or extra approvals.`,
+    });
   }
 
   function drawSegments(segs) {
     const keys = ["vendor", "channel", "region", "category"];
-    let chart;
+    let chart, current;
     function show(key) {
+      current = key;
       const rows = segs[key];
       $("segTabs").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.k === key));
+      $("segTabs").querySelector(`[data-k="${key}"]`).classList.add("seen");
+      game.progress("thorough", key);
       const data = {
         labels: rows.map((r) => r[key]),
         datasets: [
-          { type: "bar", label: "Median cycle (days)", data: rows.map((r) => r.median_cycle_days), backgroundColor: css("--accent"), borderRadius: 4, yAxisID: "y" },
-          { type: "line", label: "SLA breach rate", data: rows.map((r) => r.breach_rate * 100), borderColor: css("--heat-2"), backgroundColor: css("--heat-2"), yAxisID: "y1", tension: 0.25, pointRadius: 4 },
-          { type: "line", label: "Price mismatch rate", data: rows.map((r) => r.mismatch_rate * 100), borderColor: css("--heat-1"), backgroundColor: css("--heat-1"), yAxisID: "y1", borderDash: [5, 4], tension: 0.25, pointRadius: 3 },
+          { type: "bar", label: "Median cycle (days)", data: rows.map((r) => r.median_cycle_days), backgroundColor: css("--accent"), hoverBackgroundColor: css("--accent-2"), borderRadius: 6, yAxisID: "y" },
+          { type: "line", label: "SLA breach rate", data: rows.map((r) => r.breach_rate * 100), borderColor: css("--heat-2"), backgroundColor: css("--heat-2"), yAxisID: "y1", tension: 0.3, pointRadius: 4 },
+          { type: "line", label: "Price mismatch rate", data: rows.map((r) => r.mismatch_rate * 100), borderColor: css("--heat-1"), backgroundColor: css("--heat-1"), yAxisID: "y1", borderDash: [5, 4], tension: 0.3, pointRadius: 3 },
         ],
       };
       if (chart) { chart.data = data; chart.update(); return; }
@@ -191,6 +308,14 @@
         data,
         options: {
           interaction: { mode: "index", intersect: false },
+          onClick: (evt, els) => {
+            if (!els.length || current !== "vendor") return;
+            const i = els[0].index, rs = segs.vendor;
+            const slowest = rs.reduce((bi, r, j) => (r.median_cycle_days > rs[bi].median_cycle_days ? j : bi), 0);
+            if (i === slowest) game.unlock("culprit");
+            else if (!game.has("culprit")) Game.toast("Not that one", `${rs[i].vendor} isn't the slowest. Look for the tallest bar.`, "🤔");
+          },
+          onHover: (evt, els) => { evt.native.target.style.cursor = els.length && current === "vendor" ? "pointer" : "default"; },
           scales: {
             y: { title: { display: true, text: "median days" }, beginAtZero: true },
             y1: { position: "right", title: { display: true, text: "%" }, beginAtZero: true, grid: { drawOnChartArea: false }, ticks: { callback: (v) => v + "%" } },
@@ -208,12 +333,19 @@
   function drawModel(m) {
     $("models").querySelector("tbody").innerHTML = Object.entries(m.models).map(([name, r]) =>
       `<tr><td>${esc(name)}${name === m.best ? ' <span class="badge ok">selected</span>' : ""}</td><td class="num">${r.roc_auc}</td><td class="num">${r.avg_precision}</td><td class="num">${r.precision}</td><td class="num">${r.recall}</td></tr>`).join("");
-    $("capture").innerHTML = `Reviewing the <b>top 20%</b> of new requisitions by predicted risk would catch <b>${pct(m.top20_breach_capture)}</b> of eventual SLA breaches, versus 20% for random checks. Base breach rate: ${pct(m.base_rate)} · ${m.train_rows} train / ${m.test_rows} test cases.`;
+    $("capture").innerHTML = `🔎 Reviewing the <b>top 20%</b> of new requisitions by predicted risk catches <b>${pct(m.top20_breach_capture)}</b> of eventual SLA breaches, versus 20% for random spot checks.`;
     const imp = m.importances.filter((r) => r.importance > 0);
+    const nice = (f) => f.replace(/_/g, " ");
     new Chart($("importance"), {
       type: "bar",
-      data: { labels: imp.map((r) => r.feature.replace("_", " ")), datasets: [{ data: imp.map((r) => r.importance), backgroundColor: css("--accent"), borderRadius: 4 }] },
+      data: { labels: imp.map((r) => nice(r.feature)), datasets: [{ data: imp.map((r) => r.importance), backgroundColor: imp.map((_, i) => (i ? css("--accent") : css("--accent-2"))), borderRadius: 6 }] },
       options: { indexAxis: "y", plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: "mean drop in ROC-AUC when shuffled" } }, y: { grid: { display: false } } } },
+    });
+    const opts = shuffle(m.importances.slice(0, 4));
+    challenge("lockImp", {
+      tag: "🔮 Challenge · +50 XP", q: "Which signal, known on day one, best predicts that a case will breach SLA?",
+      options: opts.map((r) => nice(r.feature)), correct: opts.indexOf(m.importances[0]), ach: "fortune",
+      explain: `It's ${nice(m.importances[0].feature)}: raw-material purchases have the longest vendor lead times and the most price mismatches.`,
     });
   }
 
@@ -248,29 +380,35 @@
     ];
     $("sliders").innerHTML = sliders.map((s) => s.length === 1 ? `<div class="slider-group">${s[0]}</div>` :
       `<div class="slider"><label for="v-${s[0]}">${esc(s[1])}<output id="vo-${s[0]}"></output></label><input type="range" id="v-${s[0]}" min="${s[2]}" max="${s[3]}" step="${s[4]}" value="${s[6][s[0]]}"></div>`).join("") +
-      `<p class="muted" style="font-size:.82rem;margin-bottom:0">Measured from log: ${pct(v.drivers.manual_share)} manual requisitions, ${pct(v.drivers.mismatch_rate, 1)} price mismatches, ${v.drivers.matches_per_case.toFixed(2)} matches per case, ${pct(v.drivers.late_for_discount_spend_share)} of spend paid too late for a ${pct(a.early_pay_discount, 1)} discount. A lever's build cost is dropped at 0% adoption.</p>`;
+      `<p class="muted" style="font-size:.8rem;margin-bottom:0">Measured from the log: ${pct(v.drivers.manual_share)} manual requisitions, ${pct(v.drivers.mismatch_rate, 1)} price mismatches, ${v.drivers.matches_per_case.toFixed(2)} matches per case, ${pct(v.drivers.late_for_discount_spend_share)} of spend paid too late for the discount. A lever at 0% carries no build cost.</p>`;
 
     const chart = new Chart($("levers"), {
       type: "bar",
-      data: { labels: Object.values(levers).map((l) => l.name), datasets: [{ data: [], backgroundColor: css("--accent"), borderRadius: 4 }] },
+      data: { labels: Object.values(levers).map((l) => l.name), datasets: [{ data: [], backgroundColor: [css("--accent"), css("--accent-2"), css("--heat-1"), css("--heat-0")], borderRadius: 6 }] },
       options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => inr(c.parsed.x * 1e5) } } }, scales: { x: { beginAtZero: true }, y: { grid: { display: false } } } },
     });
 
-    function update() {
+    function update(user) {
       sliders.filter((s) => s.length > 1).forEach(([k, , , , , f, obj]) => { obj[k] = +$("v-" + k).value; $("vo-" + k).textContent = f(obj[k]); });
       const r = businessCase(v.drivers, a, adoption, levers);
+      const live = Object.values(adoption).filter((x) => x > 0).length;
+      const g1 = r.annual >= 2e7, g2 = r.payback !== null && r.payback < 3 && live >= 3;
+      $("valueGoals").innerHTML =
+        `<div class="goal ${g1 ? "done" : ""}"><span class="gi">${g1 ? "✅" : "🎯"}</span><span>Gross annual saving above <b>₹2 Cr</b> · now ${inr(r.annual)}</span></div>` +
+        `<div class="goal ${g2 ? "done" : ""}"><span class="gi">${g2 ? "✅" : "🎯"}</span><span>Payback under <b>3 months</b> with 3+ levers · now ${r.payback ? r.payback.toFixed(1) + " mo" : "never"}, ${live} live</span></div>`;
       $("valueKpis").innerHTML = [
-        [inr(r.annual), "Gross annual saving"],
+        [inr(r.annual), "Gross annual saving", true],
         [inr(r.net), "Net of run cost"],
-        [r.payback ? r.payback.toFixed(1) + " mo" : "n/a", "Payback period"],
+        [r.payback ? r.payback.toFixed(1) + " mo" : "n/a", "Payback period", true],
         [inr(r.npv), "3-year NPV @ 10%"],
-        [r.fte.toFixed(1), "FTE capacity released"],
+        [r.fte.toFixed(1), "FTE capacity released", true],
         [inr(r.build), "One-off build cost"],
-      ].map(([val, l]) => `<div class="kpi"><div class="v">${val}</div><div class="l">${l}</div></div>`).join("");
+      ].map(([val, l, hot]) => `<div class="kpi ${hot ? "hot" : ""}"><div class="v">${val}</div><div class="l">${l}</div></div>`).join("");
       chart.data.datasets[0].data = Object.keys(levers).map((k) => r.savings[k] / 1e5);
       chart.update("none");
+      if (user) { if (g1) game.unlock("deal"); if (g2) game.unlock("lean"); }
     }
-    $("sliders").addEventListener("input", update);
-    update();
+    $("sliders").addEventListener("input", () => update(true));
+    update(false);
   }
 })();

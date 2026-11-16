@@ -3,109 +3,171 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Process Intelligence PoV</title>
-  <meta name="description" content="Process mining, SLA-breach prediction and an interactive proof-of-value business case for a procure-to-pay process.">
+  <title>Process Detective</title>
+  <meta name="description" content="Crack the case of the slow purchase order: process mining, SLA-breach prediction and an interactive proof-of-value business case, played as a detective game.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="pov.css">
 </head>
-<body>
-  <header class="hero">
+<body class="theme-pov">
+  <div class="hud">
+    <div class="wrap hud-in">
+      <a class="brand" href="#top"><span class="logo">🔍</span><span class="name">Process Detective</span></a>
+      <div class="lvl">
+        <span id="hudLevel"></span>
+        <div class="xpbar"><i id="hudBar"></i></div>
+        <span id="hudXp"></span>
+      </div>
+      <button class="hud-btn" id="hudBadges" aria-controls="drawer">🏆</button>
+    </div>
+  </div>
+
+  <header class="hero" id="top">
     <div class="wrap">
-      <p class="eyebrow">Project · Saurabh Pandey</p>
-      <h1>Process Intelligence &amp; Proof-of-Value Prototyping Platform</h1>
-      <p class="lede">An event log goes in. Out come a discovered process map, the bottlenecks and rework loops behind slow cases, an ML model that flags at-risk requisitions on day one, and an interactive business case that puts a rupee value on fixing them.</p>
+      <span class="kicker">Portfolio project · Saurabh Pandey</span>
+      <h1>Crack the case of the<br><span class="grad">slow purchase order.</span></h1>
+      <p class="lede">A procure-to-pay process is leaking time and money. Mine its event log, find the bottlenecks and culprits, predict which cases will run late, then build the business case for fixing it. Each clue you solve earns XP.</p>
       <div class="tags"><span>Python</span><span>pandas</span><span>scikit-learn</span><span>Process mining</span><span>Data engineering</span><span>Value engineering</span></div>
       <div class="cta">
-        <a class="btn primary" href="#value">Explore the business case</a>
-        <a class="btn" href="https://github.com/21cabbagee/process-intelligence-pov">View source on GitHub</a>
+        <a class="btn primary big" href="#case">🔍 Open the case file</a>
+        <a class="btn big" href="https://github.com/21cabbagee/process-intelligence-pov">View source</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><b data-count="cases">0</b><span>cases investigated</span></div>
+        <div class="stat"><b data-count="events">0</b><span>events mined</span></div>
+        <div class="stat"><b data-count="variants">0</b><span>process variants</span></div>
+        <div class="stat"><b data-count="auc">0</b><span>SLA model ROC-AUC</span></div>
       </div>
     </div>
   </header>
 
   <main class="wrap">
-    <section>
-      <h2>Procure-to-pay health check</h2>
-      <p class="muted" id="meta"></p>
-      <div class="kpis kpis-wide" id="kpis"></div>
-    </section>
-
-    <section>
-      <h2>Discovered process map</h2>
-      <p class="muted">Directly-follows graph mined from the event log. Edge thickness = number of cases; colour = median wait before the next step. Dashed nodes are rework or exception steps.</p>
-      <div class="panel map-panel"><div class="map-scroll"><svg id="map" role="img" aria-label="Process map"></svg></div>
-        <div class="legend"><span><i class="sw" style="background:var(--heat-0)"></i>&lt; 1 day</span><span><i class="sw" style="background:var(--heat-1)"></i>1–3 days</span><span><i class="sw" style="background:var(--heat-2)"></i>&gt; 3 days</span></div>
+    <section id="case">
+      <div class="sec-head">
+        <div><span class="kicker">Clue 1 · Briefing</span><h2>The vital signs</h2></div>
+        <p class="muted" id="meta"></p>
+      </div>
+      <div class="kpi-grid" id="kpis"></div>
+      <div class="panel" id="guessPanel" style="margin-top:12px">
+        <h3>🎯 Gut check</h3>
+        <div>Before you look: what share of cases blow the <b id="slaDays"></b>-day SLA? Land within 5 points for full XP.</div>
+        <div class="guess"><input type="range" id="guess" min="0" max="100" step="1" value="50" aria-label="Your guess"><span class="gv" id="guessV">50%</span></div>
+        <button class="btn primary" id="lockGuess" style="margin-top:10px">Lock in guess</button>
+        <div id="guessResult"></div>
       </div>
     </section>
 
     <section>
-      <h2>Where the time goes</h2>
+      <div class="sec-head">
+        <div><span class="kicker">Clue 2 · The scene</span><h2>Discovered process map</h2></div>
+        <p class="muted">Mined from the event log. Dots are live cases flowing through. Thicker edges carry more cases; colour shows the median wait. Hover five handoffs to earn the Cartographer badge.</p>
+      </div>
+      <div class="panel">
+        <div class="map-scroll"><svg id="map" role="img" aria-label="Process map"></svg></div>
+        <div class="map-foot">
+          <div class="legend"><span><i class="sw" style="background:var(--heat-0)"></i>&lt; 1 day</span><span><i class="sw" style="background:var(--heat-1)"></i>1–3 days</span><span><i class="sw" style="background:var(--heat-2)"></i>&gt; 3 days</span><span>┄ rework / exception</span></div>
+          <div class="edge-info" id="edgeInfo">Hover an edge to inspect it.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><div><span class="kicker">Clue 3 · Follow the time</span><h2>Where the days disappear</h2></div></div>
       <div class="two">
-        <div class="panel"><h3>Bottlenecks: total waiting time added (days, all cases)</h3><div class="chart"><canvas id="bottlenecks"></canvas></div></div>
+        <div class="panel lockable locked" id="lockBottleneck">
+          <div class="inner"><h3>Bottlenecks · total case-days of waiting</h3><div class="chart"><canvas id="bottlenecks"></canvas></div></div>
+          <div class="challenge"></div>
+        </div>
         <div class="panel"><h3>Cycle-time distribution vs SLA</h3><div class="chart"><canvas id="histogram"></canvas></div></div>
       </div>
     </section>
 
     <section>
-      <h2>Variants &amp; conformance</h2>
+      <div class="sec-head"><div><span class="kicker">Clue 4 · Alibis</span><h2>Variants &amp; conformance</h2></div></div>
       <div class="two">
-        <div class="panel"><h3>Top process variants</h3><div class="table-wrap flat"><table id="variants"><thead><tr><th>Path</th><th>Share</th><th>Median days</th><th>SLA breach</th></tr></thead><tbody></tbody></table></div></div>
-        <div class="panel"><h3>Conformance to reference model</h3><div id="conformance" class="bars"></div></div>
+        <div class="panel"><h3>Top process variants</h3><div class="table-wrap"><table id="variants"><thead><tr><th>Path</th><th>Share</th><th>Days</th><th>Late</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="panel lockable locked" id="lockConf">
+          <div class="inner"><h3>Conformance to the reference model</h3><div id="conformance" class="bars"></div></div>
+          <div class="challenge"></div>
+        </div>
       </div>
     </section>
 
     <section>
-      <h2>Root causes by segment</h2>
+      <div class="sec-head">
+        <div><span class="kicker">Clue 5 · Suspects</span><h2>Name the culprit</h2></div>
+        <p class="muted">Inspect every segment, then click the bar of the vendor with the slowest median cycle time.</p>
+      </div>
       <div class="panel">
-        <div class="seg-head">
-          <h3>Median cycle time and SLA-breach rate by</h3>
-          <div class="seg-tabs" id="segTabs"></div>
-        </div>
+        <div class="seg-head"><h3>Median cycle time, SLA-breach and mismatch rate by</h3><div class="seg-tabs" id="segTabs"></div></div>
         <div class="chart tall"><canvas id="segments"></canvas></div>
       </div>
     </section>
 
     <section>
-      <h2>Predicting SLA breaches on day one</h2>
-      <p class="muted">Trained only on what is known when the requisition is raised (vendor, category, region, channel, amount, date), so it can be used to fast-track risky cases before they stall.</p>
-      <div class="two">
-        <div class="panel"><h3>Model comparison (held-out 25%)</h3><div class="table-wrap flat"><table id="models"><thead><tr><th>Model</th><th>ROC-AUC</th><th>Avg precision</th><th>Precision</th><th>Recall</th></tr></thead><tbody></tbody></table></div><p id="capture" class="callout"></p></div>
-        <div class="panel"><h3>Permutation feature importance (drop in AUC)</h3><div class="chart"><canvas id="importance"></canvas></div></div>
+      <div class="sec-head">
+        <div><span class="kicker">Clue 6 · Predict the next crime</span><h2>Flag late cases on day one</h2></div>
+        <p class="muted">Trained only on what's known when a requisition is raised (vendor, category, region, channel, amount, date), so risky cases can be fast-tracked early.</p>
       </div>
-    </section>
-
-    <section id="value">
-      <h2>Proof-of-value business case</h2>
-      <p class="muted">Rates such as manual share, mismatch rate and late-paid spend are measured from the log; volumes, costs and adoption are assumptions to agree with the sponsor. Move the sliders.</p>
-      <div class="roi">
-        <div class="panel sliders" id="sliders"></div>
-        <div>
-          <div class="kpis" id="valueKpis"></div>
-          <div class="panel" style="margin-top:12px"><h3>Annual saving by lever (INR lakh)</h3><div class="chart short"><canvas id="levers"></canvas></div></div>
+      <div class="two">
+        <div class="panel"><h3>Model comparison · held-out 25%</h3><div class="table-wrap"><table id="models"><thead><tr><th>Model</th><th>AUC</th><th>AP</th><th>Prec.</th><th>Recall</th></tr></thead><tbody></tbody></table></div><p id="capture" class="callout"></p></div>
+        <div class="panel lockable locked" id="lockImp">
+          <div class="inner"><h3>Permutation importance · drop in AUC</h3><div class="chart"><canvas id="importance"></canvas></div></div>
+          <div class="challenge"></div>
         </div>
       </div>
     </section>
 
+    <section id="value">
+      <div class="sec-head">
+        <div><span class="kicker">Final clue · Boss level</span><h2>Close the case: the business case</h2></div>
+        <p class="muted">Rates such as manual share, mismatch rate and late-paid spend are measured from the log. Volumes, costs and adoption are yours to set. Hit both targets.</p>
+      </div>
+      <div class="roi">
+        <div class="panel"><div id="valueGoals"></div><div id="sliders"></div></div>
+        <div>
+          <div class="kpis" id="valueKpis"></div>
+          <div class="panel" style="margin-top:12px"><h3>Annual saving by lever · ₹ lakh</h3><div class="chart short"><canvas id="levers"></canvas></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="clues">
+      <div class="sec-head"><div><span class="kicker">Evidence board</span><h2>Your badges</h2></div></div>
+      <div class="board" data-achievements></div>
+    </section>
+
     <section>
-      <h2>Pipeline</h2>
-      <div class="flow">
-        <div class="node"><b>Ingest &amp; validate</b><span>column mapping, type coercion, null and duplicate removal, validation report</span></div>
-        <div class="arrow">→</div>
-        <div class="node"><b>Case features</b><span>cycle time, rework, variants, SLA flag per case</span></div>
-        <div class="arrow">→</div>
-        <div class="node"><b>Mine</b><span>directly-follows graph, bottlenecks, variants, conformance, segments</span></div>
-        <div class="arrow">→</div>
-        <div class="node"><b>Predict</b><span>logistic regression vs gradient boosting, permutation importance</span></div>
-        <div class="arrow">→</div>
-        <div class="node"><b>Value</b><span>lever savings, FTE, payback, 3-year NPV → this dashboard</span></div>
+      <div class="sec-head"><div><span class="kicker">Under the hood</span><h2>The Python pipeline</h2></div></div>
+      <div class="flow" style="--steps:5">
+        <div class="node"><b>Ingest &amp; validate</b><span>Column mapping, type coercion, null and duplicate removal, validation report.</span></div>
+        <div class="node"><b>Case features</b><span>Cycle time, rework, variant and SLA flag per case with pandas.</span></div>
+        <div class="node"><b>Mine</b><span>Directly-follows graph, bottlenecks, variants, conformance, segments.</span></div>
+        <div class="node"><b>Predict</b><span>Logistic regression vs gradient boosting, permutation importance.</span></div>
+        <div class="node"><b>Value</b><span>Lever savings, FTE, payback and 3-year NPV, exported to this dashboard.</span></div>
       </div>
     </section>
   </main>
 
   <footer class="wrap">
-    <p>Dashboard shown on a representative procure-to-pay demo log. Run <code>python -m pov_platform your_log.csv</code> to analyse a real log. Source: <a href="https://github.com/21cabbagee/process-intelligence-pov">github.com/21cabbagee/process-intelligence-pov</a></p>
+    <div class="panel">
+      <span>Built by Saurabh Pandey · shown on a representative procure-to-pay demo log. Run <code>python -m pov_platform your_log.csv</code> on your own.</span>
+      <a href="https://github.com/21cabbagee/process-intelligence-pov">github.com/21cabbagee/process-intelligence-pov →</a>
+    </div>
   </footer>
 
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Badges">
+    <header><h2>🏆 Badges</h2><button class="x" data-close aria-label="Close">×</button></header>
+    <div class="list" data-achievements></div>
+    <footer><span>Progress is saved in this browser.</span><button class="linkish" data-reset>Reset progress</button></footer>
+  </aside>
+  <div id="toasts" aria-live="polite"></div>
+  <canvas id="confetti"></canvas>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="game.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
