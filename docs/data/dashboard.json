@@ -1,0 +1,948 @@
+{
+ "meta": {
+  "process": "Procure-to-Pay",
+  "sla_days": 21.0,
+  "events": 22948,
+  "cases": 2400,
+  "from": "2026-01-01",
+  "to": "2026-11-13",
+  "validation": {
+   "rows_in": 22948,
+   "rows_out": 22948,
+   "duplicates_removed": 0,
+   "null_rows_removed": 0,
+   "cases": 2400,
+   "issues": []
+  },
+  "reference_model": [
+   "Create Requisition",
+   "Approve Requisition",
+   "Create Purchase Order",
+   "Send PO to Vendor",
+   "Receive Goods",
+   "Receive Invoice",
+   "Three-Way Match",
+   "Approve Payment",
+   "Pay Invoice"
+  ]
+ },
+ "kpis": {
+  "median_cycle_days": 17.1,
+  "p90_cycle_days": 25.3,
+  "sla_breach_rate": 0.295,
+  "rework_rate": 0.246,
+  "price_mismatch_rate": 0.154,
+  "spend": 277146323,
+  "variants": 15
+ },
+ "conformance": {
+  "cases": 2400,
+  "happy_path_rate": 0.6292,
+  "order_fitness": 0.855,
+  "invoice_before_goods_rate": 0.145,
+  "rework_loop_rate": 0.2462,
+  "extra_approval_rate": 0.0275
+ },
+ "process_map": {
+  "edges": [
+   {
+    "source": "Approve Payment",
+    "target": "Pay Invoice",
+    "count": 2400,
+    "median_wait_h": 83.27,
+    "p90_wait_h": 171.69
+   },
+   {
+    "source": "Create Requisition",
+    "target": "Approve Requisition",
+    "count": 2400,
+    "median_wait_h": 26.91,
+    "p90_wait_h": 90.08
+   },
+   {
+    "source": "\u25cfstart",
+    "target": "Create Requisition",
+    "count": 2400,
+    "median_wait_h": 0.0,
+    "p90_wait_h": 0.0
+   },
+   {
+    "source": "Three-Way Match",
+    "target": "Approve Payment",
+    "count": 2400,
+    "median_wait_h": 26.06,
+    "p90_wait_h": 99.7
+   },
+   {
+    "source": "Pay Invoice",
+    "target": "\u25a0end",
+    "count": 2400,
+    "median_wait_h": 0.0,
+    "p90_wait_h": 0.0
+   },
+   {
+    "source": "Create Purchase Order",
+    "target": "Send PO to Vendor",
+    "count": 2400,
+    "median_wait_h": 2.13,
+    "p90_wait_h": 7.17
+   },
+   {
+    "source": "Approve Requisition",
+    "target": "Create Purchase Order",
+    "count": 2334,
+    "median_wait_h": 8.47,
+    "p90_wait_h": 60.44
+   },
+   {
+    "source": "Receive Goods",
+    "target": "Receive Invoice",
+    "count": 2052,
+    "median_wait_h": 33.59,
+    "p90_wait_h": 109.67
+   },
+   {
+    "source": "Send PO to Vendor",
+    "target": "Receive Goods",
+    "count": 2052,
+    "median_wait_h": 123.39,
+    "p90_wait_h": 291.21
+   },
+   {
+    "source": "Receive Invoice",
+    "target": "Three-Way Match",
+    "count": 2052,
+    "median_wait_h": 10.3,
+    "p90_wait_h": 60.44
+   },
+   {
+    "source": "Resolve Price Mismatch",
+    "target": "Three-Way Match",
+    "count": 370,
+    "median_wait_h": 5.46,
+    "p90_wait_h": 22.43
+   },
+   {
+    "source": "Three-Way Match",
+    "target": "Resolve Price Mismatch",
+    "count": 370,
+    "median_wait_h": 92.71,
+    "p90_wait_h": 265.99
+   },
+   {
+    "source": "Receive Goods",
+    "target": "Three-Way Match",
+    "count": 348,
+    "median_wait_h": 9.56,
+    "p90_wait_h": 62.84
+   },
+   {
+    "source": "Receive Invoice",
+    "target": "Receive Goods",
+    "count": 348,
+    "median_wait_h": 53.44,
+    "p90_wait_h": 124.46
+   },
+   {
+    "source": "Send PO to Vendor",
+    "target": "Receive Invoice",
+    "count": 348,
+    "median_wait_h": 70.41,
+    "p90_wait_h": 162.35
+   },
+   {
+    "source": "Send PO to Vendor",
+    "target": "Change Purchase Order",
+    "count": 271,
+    "median_wait_h": 22.29,
+    "p90_wait_h": 87.4
+   },
+   {
+    "source": "Change Purchase Order",
+    "target": "Send PO to Vendor",
+    "count": 271,
+    "median_wait_h": 2.13,
+    "p90_wait_h": 7.15
+   },
+   {
+    "source": "Second-Level Approval",
+    "target": "Create Purchase Order",
+    "count": 66,
+    "median_wait_h": 4.41,
+    "p90_wait_h": 37.37
+   },
+   {
+    "source": "Approve Requisition",
+    "target": "Second-Level Approval",
+    "count": 66,
+    "median_wait_h": 65.99,
+    "p90_wait_h": 166.92
+   }
+  ],
+  "layout": {
+   "\u25cfstart": [
+    0,
+    1
+   ],
+   "Create Requisition": [
+    1,
+    1
+   ],
+   "Approve Requisition": [
+    2,
+    1
+   ],
+   "Second-Level Approval": [
+    2.5,
+    0
+   ],
+   "Create Purchase Order": [
+    3,
+    1
+   ],
+   "Send PO to Vendor": [
+    4,
+    1
+   ],
+   "Change Purchase Order": [
+    4,
+    2
+   ],
+   "Receive Goods": [
+    5,
+    1
+   ],
+   "Receive Invoice": [
+    6,
+    1
+   ],
+   "Three-Way Match": [
+    7,
+    1
+   ],
+   "Resolve Price Mismatch": [
+    7,
+    2
+   ],
+   "Approve Payment": [
+    8,
+    1
+   ],
+   "Pay Invoice": [
+    9,
+    1
+   ],
+   "\u25a0end": [
+    10,
+    1
+   ]
+  },
+  "activities": [
+   {
+    "activity": "Three-Way Match",
+    "events": 2770,
+    "cases": 2400,
+    "median_wait_h": 9.57
+   },
+   {
+    "activity": "Send PO to Vendor",
+    "events": 2671,
+    "cases": 2400,
+    "median_wait_h": 2.13
+   },
+   {
+    "activity": "Approve Payment",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 26.06
+   },
+   {
+    "activity": "Approve Requisition",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 26.91
+   },
+   {
+    "activity": "Create Purchase Order",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 8.3
+   },
+   {
+    "activity": "Create Requisition",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": null
+   },
+   {
+    "activity": "Pay Invoice",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 83.27
+   },
+   {
+    "activity": "Receive Goods",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 108.05
+   },
+   {
+    "activity": "Receive Invoice",
+    "events": 2400,
+    "cases": 2400,
+    "median_wait_h": 39.37
+   },
+   {
+    "activity": "Resolve Price Mismatch",
+    "events": 370,
+    "cases": 370,
+    "median_wait_h": 92.71
+   },
+   {
+    "activity": "Change Purchase Order",
+    "events": 271,
+    "cases": 271,
+    "median_wait_h": 22.29
+   },
+   {
+    "activity": "Second-Level Approval",
+    "events": 66,
+    "cases": 66,
+    "median_wait_h": 65.99
+   }
+  ]
+ },
+ "variants": [
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 1510,
+   "median_cycle_days": 16.0006,
+   "breach_rate": 0.2318,
+   "share": 0.6292,
+   "cumulative_share": 0.6292,
+   "steps": 9
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Resolve Price Mismatch \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 266,
+   "median_cycle_days": 22.252,
+   "breach_rate": 0.594,
+   "share": 0.1108,
+   "cumulative_share": 0.74,
+   "steps": 11
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Invoice \u2192 Receive Goods \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 253,
+   "median_cycle_days": 14.1994,
+   "breach_rate": 0.1186,
+   "share": 0.1054,
+   "cumulative_share": 0.8454,
+   "steps": 9
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Change Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 178,
+   "median_cycle_days": 18.0457,
+   "breach_rate": 0.3708,
+   "share": 0.0742,
+   "cumulative_share": 0.9196,
+   "steps": 11
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Invoice \u2192 Receive Goods \u2192 Three-Way Match \u2192 Resolve Price Mismatch \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 44,
+   "median_cycle_days": 23.5578,
+   "breach_rate": 0.5455,
+   "share": 0.0183,
+   "cumulative_share": 0.9379,
+   "steps": 11
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Change Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Resolve Price Mismatch \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 43,
+   "median_cycle_days": 25.0866,
+   "breach_rate": 0.7209,
+   "share": 0.0179,
+   "cumulative_share": 0.9558,
+   "steps": 13
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Second-Level Approval \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 37,
+   "median_cycle_days": 21.0563,
+   "breach_rate": 0.5135,
+   "share": 0.0154,
+   "cumulative_share": 0.9712,
+   "steps": 10
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Change Purchase Order \u2192 Send PO to Vendor \u2192 Receive Invoice \u2192 Receive Goods \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 34,
+   "median_cycle_days": 16.2608,
+   "breach_rate": 0.2647,
+   "share": 0.0142,
+   "cumulative_share": 0.9854,
+   "steps": 11
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Second-Level Approval \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Goods \u2192 Receive Invoice \u2192 Three-Way Match \u2192 Resolve Price Mismatch \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 9,
+   "median_cycle_days": 32.2648,
+   "breach_rate": 0.8889,
+   "share": 0.0038,
+   "cumulative_share": 0.9892,
+   "steps": 12
+  },
+  {
+   "variant": "Create Requisition \u2192 Approve Requisition \u2192 Second-Level Approval \u2192 Create Purchase Order \u2192 Send PO to Vendor \u2192 Receive Invoice \u2192 Receive Goods \u2192 Three-Way Match \u2192 Approve Payment \u2192 Pay Invoice",
+   "cases": 9,
+   "median_cycle_days": 18.1578,
+   "breach_rate": 0.3333,
+   "share": 0.0038,
+   "cumulative_share": 0.9929,
+   "steps": 10
+  }
+ ],
+ "bottlenecks": [
+  {
+   "source": "Send PO to Vendor",
+   "target": "Receive Goods",
+   "count": 2052,
+   "median_wait_h": 123.39,
+   "p90_wait_h": 291.21,
+   "total_wait_days": 10549.66
+  },
+  {
+   "source": "Approve Payment",
+   "target": "Pay Invoice",
+   "count": 2400,
+   "median_wait_h": 83.27,
+   "p90_wait_h": 171.69,
+   "total_wait_days": 8327.15
+  },
+  {
+   "source": "Receive Goods",
+   "target": "Receive Invoice",
+   "count": 2052,
+   "median_wait_h": 33.59,
+   "p90_wait_h": 109.67,
+   "total_wait_days": 2872.16
+  },
+  {
+   "source": "Create Requisition",
+   "target": "Approve Requisition",
+   "count": 2400,
+   "median_wait_h": 26.91,
+   "p90_wait_h": 90.08,
+   "total_wait_days": 2690.65
+  },
+  {
+   "source": "Three-Way Match",
+   "target": "Approve Payment",
+   "count": 2400,
+   "median_wait_h": 26.06,
+   "p90_wait_h": 99.7,
+   "total_wait_days": 2606.0
+  },
+  {
+   "source": "Three-Way Match",
+   "target": "Resolve Price Mismatch",
+   "count": 370,
+   "median_wait_h": 92.71,
+   "p90_wait_h": 265.99,
+   "total_wait_days": 1429.25
+  },
+  {
+   "source": "Send PO to Vendor",
+   "target": "Receive Invoice",
+   "count": 348,
+   "median_wait_h": 70.41,
+   "p90_wait_h": 162.35,
+   "total_wait_days": 1020.91
+  },
+  {
+   "source": "Receive Invoice",
+   "target": "Three-Way Match",
+   "count": 2052,
+   "median_wait_h": 10.3,
+   "p90_wait_h": 60.44,
+   "total_wait_days": 880.65
+  }
+ ],
+ "segments": {
+  "vendor": [
+   {
+    "vendor": "Indus Steel Traders",
+    "cases": 199,
+    "median_cycle_days": 24.0966,
+    "breach_rate": 0.6734,
+    "mismatch_rate": 0.1859,
+    "spend": 23690140.34
+   },
+   {
+    "vendor": "Kaveri Industrial",
+    "cases": 246,
+    "median_cycle_days": 23.9607,
+    "breach_rate": 0.6382,
+    "mismatch_rate": 0.2154,
+    "spend": 25672702.99
+   },
+   {
+    "vendor": "Apex Components",
+    "cases": 339,
+    "median_cycle_days": 18.11,
+    "breach_rate": 0.3805,
+    "mismatch_rate": 0.3363,
+    "spend": 40040683.67
+   },
+   {
+    "vendor": "Pixel Peripherals",
+    "cases": 243,
+    "median_cycle_days": 18.048,
+    "breach_rate": 0.3169,
+    "mismatch_rate": 0.1029,
+    "spend": 25835692.58
+   },
+   {
+    "vendor": "Sahyadri Facilities",
+    "cases": 216,
+    "median_cycle_days": 16.1346,
+    "breach_rate": 0.213,
+    "mismatch_rate": 0.1481,
+    "spend": 23416949.99
+   },
+   {
+    "vendor": "BlueRiver Logistics",
+    "cases": 213,
+    "median_cycle_days": 15.9722,
+    "breach_rate": 0.2207,
+    "mismatch_rate": 0.1221,
+    "spend": 21846658.32
+   },
+   {
+    "vendor": "Meridian Consulting",
+    "cases": 213,
+    "median_cycle_days": 15.0744,
+    "breach_rate": 0.1643,
+    "mismatch_rate": 0.1033,
+    "spend": 25643392.42
+   },
+   {
+    "vendor": "Greenleaf Stationers",
+    "cases": 267,
+    "median_cycle_days": 14.0282,
+    "breach_rate": 0.0974,
+    "mismatch_rate": 0.0674,
+    "spend": 36705352.46
+   },
+   {
+    "vendor": "Northwind Supplies",
+    "cases": 290,
+    "median_cycle_days": 14.0201,
+    "breach_rate": 0.1241,
+    "mismatch_rate": 0.0621,
+    "spend": 35067139.38
+   },
+   {
+    "vendor": "Orbit Software",
+    "cases": 174,
+    "median_cycle_days": 12.6091,
+    "breach_rate": 0.1207,
+    "mismatch_rate": 0.1437,
+    "spend": 19227611.01
+   }
+  ],
+  "channel": [
+   {
+    "channel": "Manual",
+    "cases": 1401,
+    "median_cycle_days": 18.1202,
+    "breach_rate": 0.4069,
+    "mismatch_rate": 0.1849,
+    "spend": 156856979.41
+   },
+   {
+    "channel": "Catalog",
+    "cases": 999,
+    "median_cycle_days": 14.158,
+    "breach_rate": 0.1381,
+    "mismatch_rate": 0.1111,
+    "spend": 120289343.75
+   }
+  ],
+  "region": [
+   {
+    "region": "North",
+    "cases": 816,
+    "median_cycle_days": 18.0178,
+    "breach_rate": 0.3615,
+    "mismatch_rate": 0.1642,
+    "spend": 100165056.64
+   },
+   {
+    "region": "West",
+    "cases": 814,
+    "median_cycle_days": 16.9542,
+    "breach_rate": 0.2678,
+    "mismatch_rate": 0.1499,
+    "spend": 93652885.95
+   },
+   {
+    "region": "South",
+    "cases": 770,
+    "median_cycle_days": 16.1041,
+    "breach_rate": 0.2532,
+    "mismatch_rate": 0.1481,
+    "spend": 83328380.57
+   }
+  ],
+  "category": [
+   {
+    "category": "Raw Materials",
+    "cases": 445,
+    "median_cycle_days": 24.0142,
+    "breach_rate": 0.6539,
+    "mismatch_rate": 0.2022,
+    "spend": 49362843.33
+   },
+   {
+    "category": "IT Hardware",
+    "cases": 582,
+    "median_cycle_days": 18.0767,
+    "breach_rate": 0.354,
+    "mismatch_rate": 0.2388,
+    "spend": 65876376.25
+   },
+   {
+    "category": "Facilities",
+    "cases": 216,
+    "median_cycle_days": 16.1346,
+    "breach_rate": 0.213,
+    "mismatch_rate": 0.1481,
+    "spend": 23416949.99
+   },
+   {
+    "category": "Logistics",
+    "cases": 213,
+    "median_cycle_days": 15.9722,
+    "breach_rate": 0.2207,
+    "mismatch_rate": 0.1221,
+    "spend": 21846658.32
+   },
+   {
+    "category": "Software & Services",
+    "cases": 387,
+    "median_cycle_days": 14.2433,
+    "breach_rate": 0.1447,
+    "mismatch_rate": 0.1214,
+    "spend": 44871003.43
+   },
+   {
+    "category": "Office Supplies",
+    "cases": 557,
+    "median_cycle_days": 14.0282,
+    "breach_rate": 0.1113,
+    "mismatch_rate": 0.0646,
+    "spend": 71772491.84
+   }
+  ]
+ },
+ "monthly": [
+  {
+   "start_month": "2026-01",
+   "cases": 253,
+   "median_cycle_days": 17.9664,
+   "breach_rate": 0.3162
+  },
+  {
+   "start_month": "2026-02",
+   "cases": 251,
+   "median_cycle_days": 16.2717,
+   "breach_rate": 0.2311
+  },
+  {
+   "start_month": "2026-03",
+   "cases": 293,
+   "median_cycle_days": 16.2543,
+   "breach_rate": 0.2765
+  },
+  {
+   "start_month": "2026-04",
+   "cases": 241,
+   "median_cycle_days": 17.1435,
+   "breach_rate": 0.3361
+  },
+  {
+   "start_month": "2026-05",
+   "cases": 255,
+   "median_cycle_days": 17.1034,
+   "breach_rate": 0.3098
+  },
+  {
+   "start_month": "2026-06",
+   "cases": 316,
+   "median_cycle_days": 17.0042,
+   "breach_rate": 0.2658
+  },
+  {
+   "start_month": "2026-07",
+   "cases": 264,
+   "median_cycle_days": 17.1753,
+   "breach_rate": 0.3295
+  },
+  {
+   "start_month": "2026-08",
+   "cases": 274,
+   "median_cycle_days": 17.9785,
+   "breach_rate": 0.3212
+  },
+  {
+   "start_month": "2026-09",
+   "cases": 253,
+   "median_cycle_days": 17.0963,
+   "breach_rate": 0.2767
+  }
+ ],
+ "cycle_histogram": [
+  {
+   "bin": "[0.0, 3.0)",
+   "cases": 0
+  },
+  {
+   "bin": "[3.0, 6.0)",
+   "cases": 14
+  },
+  {
+   "bin": "[6.0, 9.0)",
+   "cases": 94
+  },
+  {
+   "bin": "[9.0, 12.0)",
+   "cases": 563
+  },
+  {
+   "bin": "[12.0, 15.0)",
+   "cases": 190
+  },
+  {
+   "bin": "[15.0, 18.0)",
+   "cases": 489
+  },
+  {
+   "bin": "[18.0, 21.0)",
+   "cases": 342
+  },
+  {
+   "bin": "[21.0, 24.0)",
+   "cases": 261
+  },
+  {
+   "bin": "[24.0, 27.0)",
+   "cases": 221
+  },
+  {
+   "bin": "[27.0, 30.0)",
+   "cases": 76
+  },
+  {
+   "bin": "[30.0, 33.0)",
+   "cases": 82
+  },
+  {
+   "bin": "[33.0, 36.0)",
+   "cases": 14
+  },
+  {
+   "bin": "[36.0, 39.0)",
+   "cases": 23
+  },
+  {
+   "bin": "[39.0, 42.0)",
+   "cases": 15
+  },
+  {
+   "bin": "[42.0, 45.0)",
+   "cases": 11
+  },
+  {
+   "bin": "[45.0, 48.0)",
+   "cases": 2
+  },
+  {
+   "bin": "[48.0, 51.0)",
+   "cases": 1
+  },
+  {
+   "bin": "[51.0, 54.0)",
+   "cases": 1
+  },
+  {
+   "bin": "[54.0, 57.0)",
+   "cases": 0
+  },
+  {
+   "bin": "[57.0, 60.0)",
+   "cases": 0
+  },
+  {
+   "bin": "[60.0, 1000000000.0)",
+   "cases": 1
+  }
+ ],
+ "model": {
+  "target": "cycle time > SLA",
+  "base_rate": 0.295,
+  "train_rows": 1800,
+  "test_rows": 600,
+  "models": {
+   "Logistic regression (baseline)": {
+    "roc_auc": 0.816,
+    "avg_precision": 0.646,
+    "precision": 0.64,
+    "recall": 0.503,
+    "confusion": [
+     [
+      373,
+      50
+     ],
+     [
+      88,
+      89
+     ]
+    ]
+   },
+   "Gradient boosting": {
+    "roc_auc": 0.819,
+    "avg_precision": 0.643,
+    "precision": 0.646,
+    "recall": 0.525,
+    "confusion": [
+     [
+      372,
+      51
+     ],
+     [
+      84,
+      93
+     ]
+    ]
+   }
+  },
+  "best": "Gradient boosting",
+  "importances": [
+   {
+    "feature": "category",
+    "importance": 0.1712
+   },
+   {
+    "feature": "channel",
+    "importance": 0.0993
+   },
+   {
+    "feature": "start_weekday",
+    "importance": 0.0308
+   },
+   {
+    "feature": "log_amount",
+    "importance": 0.0122
+   },
+   {
+    "feature": "region",
+    "importance": 0.0044
+   },
+   {
+    "feature": "month_end",
+    "importance": 0.0007
+   },
+   {
+    "feature": "vendor",
+    "importance": 0.0004
+   }
+  ],
+  "top20_breach_capture": 0.469
+ },
+ "value": {
+  "drivers": {
+   "sample_cases": 2400,
+   "manual_share": 0.5837,
+   "mismatch_rate": 0.1542,
+   "matches_per_case": 1.1542,
+   "spend_per_case": 115477.63,
+   "late_for_discount_spend_share": 0.2464,
+   "median_days_invoice_to_pay": 7.4
+  },
+  "levers_meta": {
+   "catalog_first": {
+    "name": "Catalog-first buying",
+    "adoption": 0.5,
+    "build_cost": 1200000
+   },
+   "price_sync": {
+    "name": "Vendor price-master sync",
+    "adoption": 0.6,
+    "build_cost": 800000
+   },
+   "touchless_match": {
+    "name": "Touchless three-way match",
+    "adoption": 0.7,
+    "build_cost": 1500000
+   },
+   "early_payment": {
+    "name": "Early-payment discount capture",
+    "adoption": 0.25,
+    "build_cost": 600000
+   }
+  },
+  "baseline": {
+   "levers": [
+    {
+     "key": "catalog_first",
+     "name": "Catalog-first buying",
+     "hours_per_year": 4013,
+     "saving_per_year": 3009703,
+     "build_cost": 1200000
+    },
+    {
+     "key": "price_sync",
+     "name": "Vendor price-master sync",
+     "hours_per_year": 5782,
+     "saving_per_year": 4336875,
+     "build_cost": 800000
+    },
+    {
+     "key": "touchless_match",
+     "name": "Touchless three-way match",
+     "hours_per_year": 6060,
+     "saving_per_year": 4544662,
+     "build_cost": 1500000
+    },
+    {
+     "key": "early_payment",
+     "name": "Early-payment discount capture",
+     "hours_per_year": 0,
+     "saving_per_year": 2667533,
+     "build_cost": 600000
+    }
+   ],
+   "annual_saving": 14558774,
+   "annual_net": 13658774,
+   "fte_equivalent": 8.8,
+   "build_cost": 4100000,
+   "payback_months": 3.6,
+   "npv_3y": 29867349,
+   "assumptions": {
+    "annual_cases": 25000,
+    "hourly_cost": 750.0,
+    "manual_touch_minutes": 45.0,
+    "catalog_touch_minutes": 12.0,
+    "mismatch_rework_hours": 2.5,
+    "match_minutes": 18.0,
+    "early_pay_discount": 0.015,
+    "discount_days": 10.0,
+    "discount_rate": 0.1,
+    "run_cost_annual": 900000.0
+   }
+  }
+ }
+}

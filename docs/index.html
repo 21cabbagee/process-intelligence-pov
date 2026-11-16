@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Process Intelligence PoV</title>
+  <meta name="description" content="Process mining, SLA-breach prediction and an interactive proof-of-value business case for a procure-to-pay process.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Project · Saurabh Pandey</p>
+      <h1>Process Intelligence &amp; Proof-of-Value Prototyping Platform</h1>
+      <p class="lede">An event log goes in. Out come a discovered process map, the bottlenecks and rework loops behind slow cases, an ML model that flags at-risk requisitions on day one, and an interactive business case that puts a rupee value on fixing them.</p>
+      <div class="tags"><span>Python</span><span>pandas</span><span>scikit-learn</span><span>Process mining</span><span>Data engineering</span><span>Value engineering</span></div>
+      <div class="cta">
+        <a class="btn primary" href="#value">Explore the business case</a>
+        <a class="btn" href="https://github.com/21cabbagee/process-intelligence-pov">View source on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>Procure-to-pay health check</h2>
+      <p class="muted" id="meta"></p>
+      <div class="kpis kpis-wide" id="kpis"></div>
+    </section>
+
+    <section>
+      <h2>Discovered process map</h2>
+      <p class="muted">Directly-follows graph mined from the event log. Edge thickness = number of cases; colour = median wait before the next step. Dashed nodes are rework or exception steps.</p>
+      <div class="panel map-panel"><div class="map-scroll"><svg id="map" role="img" aria-label="Process map"></svg></div>
+        <div class="legend"><span><i class="sw" style="background:var(--heat-0)"></i>&lt; 1 day</span><span><i class="sw" style="background:var(--heat-1)"></i>1–3 days</span><span><i class="sw" style="background:var(--heat-2)"></i>&gt; 3 days</span></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Where the time goes</h2>
+      <div class="two">
+        <div class="panel"><h3>Bottlenecks: total waiting time added (days, all cases)</h3><div class="chart"><canvas id="bottlenecks"></canvas></div></div>
+        <div class="panel"><h3>Cycle-time distribution vs SLA</h3><div class="chart"><canvas id="histogram"></canvas></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Variants &amp; conformance</h2>
+      <div class="two">
+        <div class="panel"><h3>Top process variants</h3><div class="table-wrap flat"><table id="variants"><thead><tr><th>Path</th><th>Share</th><th>Median days</th><th>SLA breach</th></tr></thead><tbody></tbody></table></div></div>
+        <div class="panel"><h3>Conformance to reference model</h3><div id="conformance" class="bars"></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Root causes by segment</h2>
+      <div class="panel">
+        <div class="seg-head">
+          <h3>Median cycle time and SLA-breach rate by</h3>
+          <div class="seg-tabs" id="segTabs"></div>
+        </div>
+        <div class="chart tall"><canvas id="segments"></canvas></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Predicting SLA breaches on day one</h2>
+      <p class="muted">Trained only on what is known when the requisition is raised (vendor, category, region, channel, amount, date), so it can be used to fast-track risky cases before they stall.</p>
+      <div class="two">
+        <div class="panel"><h3>Model comparison (held-out 25%)</h3><div class="table-wrap flat"><table id="models"><thead><tr><th>Model</th><th>ROC-AUC</th><th>Avg precision</th><th>Precision</th><th>Recall</th></tr></thead><tbody></tbody></table></div><p id="capture" class="callout"></p></div>
+        <div class="panel"><h3>Permutation feature importance (drop in AUC)</h3><div class="chart"><canvas id="importance"></canvas></div></div>
+      </div>
+    </section>
+
+    <section id="value">
+      <h2>Proof-of-value business case</h2>
+      <p class="muted">Rates such as manual share, mismatch rate and late-paid spend are measured from the log; volumes, costs and adoption are assumptions to agree with the sponsor. Move the sliders.</p>
+      <div class="roi">
+        <div class="panel sliders" id="sliders"></div>
+        <div>
+          <div class="kpis" id="valueKpis"></div>
+          <div class="panel" style="margin-top:12px"><h3>Annual saving by lever (INR lakh)</h3><div class="chart short"><canvas id="levers"></canvas></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Pipeline</h2>
+      <div class="flow">
+        <div class="node"><b>Ingest &amp; validate</b><span>column mapping, type coercion, null and duplicate removal, validation report</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Case features</b><span>cycle time, rework, variants, SLA flag per case</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Mine</b><span>directly-follows graph, bottlenecks, variants, conformance, segments</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Predict</b><span>logistic regression vs gradient boosting, permutation importance</span></div>
+        <div class="arrow">→</div>
+        <div class="node"><b>Value</b><span>lever savings, FTE, payback, 3-year NPV → this dashboard</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>The event log is synthetic: generated with known, planted inefficiencies so the analysis can be checked against ground truth. Run <code>python -m pov_platform your_log.csv</code> to analyse a real log. Source: <a href="https://github.com/21cabbagee/process-intelligence-pov">github.com/21cabbagee/process-intelligence-pov</a></p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
